@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "terra-recruit-v3";
+const CACHE_NAME = "terra-recruit-v4";
 const APP_SHELL = [
   "./",
   "./index.html",

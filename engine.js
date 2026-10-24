@@ -120,10 +120,23 @@
       throw new Error(`最多只能保留 ${drawSize} 名干员。`);
     }
 
-    const results = lockedOperators.map((operator) => ({ ...operator, isLocked: true }));
+    const lockedSlots = Array(drawSize).fill(null);
+    lockedOperators.forEach((operator, fallbackIndex) => {
+      const slotIndex = Number.isInteger(operator.slotIndex) ? operator.slotIndex : fallbackIndex;
+      if (slotIndex < 0 || slotIndex >= drawSize) {
+        throw new Error("保留干员的位置超出本次抽取范围。");
+      }
+      if (lockedSlots[slotIndex]) {
+        throw new Error("多名保留干员不能固定在同一位置。");
+      }
+      lockedSlots[slotIndex] = { ...operator, isLocked: true };
+    });
+
+    const lockedResults = lockedSlots.filter(Boolean);
+    const drawnResults = [];
     const usedNames = new Set();
     const professionCounts = Object.fromEntries(PROFESSIONS.map((profession) => [profession, 0]));
-    for (const operator of results) {
+    for (const operator of lockedResults) {
       usedNames.add(operator.name);
       professionCounts[operator.profession] += 1;
     }
@@ -137,12 +150,12 @@
         const needed = minimums[profession] - professionCounts[profession];
         for (let index = 0; index < needed; index += 1) {
           const [name, rarity] = candidates[getRandomInt(candidates.length)];
-          results.push({ name, rarity, profession });
+          drawnResults.push({ name, rarity, profession });
           professionCounts[profession] += 1;
         }
       }
 
-      while (results.length < drawSize) {
+      while (lockedResults.length + drawnResults.length < drawSize) {
         const eligible = ALL_OPERATORS.filter(
           (operator) => professionCounts[operator.profession] < maximums[operator.profession]
         );
@@ -150,10 +163,12 @@
           throw new Error("职业最高人数限制过紧，无法完成本次抽取。");
         }
         const operator = eligible[getRandomInt(eligible.length)];
-        results.push(operator);
+        drawnResults.push(operator);
         professionCounts[operator.profession] += 1;
       }
-      return shuffle(results);
+      const shuffledDraws = shuffle(drawnResults);
+      let drawIndex = 0;
+      return lockedSlots.map((operator) => operator ?? shuffledDraws[drawIndex++]);
     }
 
     for (const profession of quotaProfessions) {
@@ -161,13 +176,13 @@
       const needed = minimums[profession] - professionCounts[profession];
       const count = Math.min(needed, candidates.length);
       for (let index = 0; index < count; index += 1) {
-        results.push(candidates[index]);
+        drawnResults.push(candidates[index]);
         usedNames.add(candidates[index].name);
         professionCounts[profession] += 1;
       }
     }
 
-    while (results.length < drawSize) {
+    while (lockedResults.length + drawnResults.length < drawSize) {
       const remainingPool = ALL_OPERATORS.filter(
         (operator) =>
           !usedNames.has(operator.name) &&
@@ -178,12 +193,14 @@
       }
 
       const operator = remainingPool[getRandomInt(remainingPool.length)];
-      results.push(operator);
+      drawnResults.push(operator);
       usedNames.add(operator.name);
       professionCounts[operator.profession] += 1;
     }
 
-    return shuffle(results).slice(0, drawSize);
+    const shuffledDraws = shuffle(drawnResults);
+    let drawIndex = 0;
+    return lockedSlots.map((operator) => operator ?? shuffledDraws[drawIndex++]);
   }
 
   root.RecruitEngine = Object.freeze({

@@ -325,7 +325,9 @@
   }
 
   function rerollUnlocked() {
-    const locked = state.lastResults.filter((operator) => operator.isLocked);
+    const locked = state.lastResults
+      .map((operator, index) => operator.isLocked ? { ...operator, slotIndex: index } : null)
+      .filter(Boolean);
     if (locked.length === 0) {
       showToast("请先点击卡片右上角“保留”");
       return;
@@ -353,7 +355,7 @@
         locked
       );
       renderResults(results, state.drawToken);
-      showToast(`已保留 ${locked.length} 名，其余位置完成重抽`);
+      showToast(`已保留 ${locked.length} 名，原位置固定并完成重抽`);
     } catch (drawError) {
       showError(drawError.message);
     }
