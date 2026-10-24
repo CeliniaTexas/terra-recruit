@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#11110f">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="泰拉征募">
+  <title>泰拉征募 | 明日方舟随机抽卡</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-noise" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="泰拉征募首页">
+      <span class="brand-mark" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+      <span class="brand-copy">
+        <small>RHODES ISLAND</small>
+        <strong>泰拉征募</strong>
+      </span>
+    </a>
+    <div class="header-meta">
+      <span class="status-dot"></span>
+      <span>离线可用</span>
+      <span class="header-divider"></span>
+      <span id="pool-count">434 名干员</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-kicker">
+        <span>TACTICAL RECRUITMENT</span>
+        <span class="kicker-line"></span>
+        <span>12 / 434</span>
+      </div>
+      <div class="hero-row">
+        <div>
+          <h1 id="page-title">编制你的下一次<br><em>十二人小队</em></h1>
+          <p class="hero-description">从 PRTS 全部实装干员中随机征募。设定职业下限，剩下的交给运气。</p>
+        </div>
+        <div class="hero-stamp" aria-hidden="true">
+          <span>RI</span>
+          <small>FIELD<br>DRAFT</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="control-panel" aria-labelledby="control-title">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">DRAW PARAMETERS</span>
+            <h2 id="control-title">征募条件</h2>
+          </div>
+          <button class="text-button" id="reset-conditions" type="button">重置</button>
+        </div>
+
+        <div class="quick-presets">
+          <span class="field-label">快速预设</span>
+          <div class="preset-grid">
+            <button class="preset" type="button" data-preset="balanced">
+              <span class="preset-icon">01</span>
+              <span><strong>基础均衡</strong><small>全职业≥1 · 医疗≤2</small></span>
+            </button>
+            <button class="preset" type="button" data-preset="double-medic">
+              <span class="preset-icon">02</span>
+              <span><strong>双医疗</strong><small>全职业≥1 · 医疗恰好 2 名</small></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="condition-block">
+          <div class="block-title-row">
+            <span class="field-label">职业人数范围</span>
+            <span class="condition-total" id="condition-total">下限 0 / 12</span>
+          </div>
+          <div class="profession-controls" id="profession-controls"></div>
+        </div>
+
+        <div class="option-row">
+          <div>
+            <span class="option-title">不重复抽取</span>
+            <span class="option-help">同一小队内每名干员最多出现一次</span>
+          </div>
+          <label class="switch">
+            <input id="unique-toggle" type="checkbox" checked>
+            <span class="switch-track" aria-hidden="true"></span>
+            <span class="sr-only">不重复抽取</span>
+          </label>
+        </div>
+
+        <div class="pool-note">
+          <span class="pool-note-icon" aria-hidden="true">i</span>
+          <p>候选池包含联动、异格、活动干员及机器人干员。当前名单同步自 <a href="https://prts.wiki/w/%E5%B9%B2%E5%91%98%E4%B8%80%E8%A7%88" target="_blank" rel="noreferrer">PRTS</a>。</p>
+        </div>
+
+        <button class="draw-button" id="draw-button" type="button">
+          <span class="draw-button-label">
+            <small>COMMENCE RECRUITMENT</small>
+            <strong>开始征募</strong>
+          </span>
+          <span class="draw-button-count">×12</span>
+        </button>
+        <p class="shortcut-hint">按 <kbd>D</kbd> 快速抽取</p>
+      </aside>
+
+      <section class="result-panel" aria-labelledby="result-title">
+        <div class="result-header">
+          <div>
+            <span class="eyebrow">RECRUITMENT RESULT</span>
+            <h2 id="result-title">候选中继区</h2>
+          </div>
+          <div class="result-actions">
+            <span class="result-summary" id="result-summary">等待接入</span>
+            <button class="icon-button" id="copy-button" type="button" title="复制本次结果" aria-label="复制本次结果" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="11" height="11" rx="1"></rect>
+                <path d="M16 8V5H5v11h3"></path>
+              </svg>
+            </button>
+            <button class="icon-button" id="reroll-button" type="button" title="换一组结果" aria-label="换一组结果" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5"></path>
+                <path d="M6.1 9a7 7 0 0 1 11.2-2L20 10M4 14l2.7 3a7 7 0 0 0 11.2-2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="error-banner" id="error-banner" role="alert" hidden></div>
+
+        <div class="card-grid is-idle" id="card-grid" aria-live="polite"></div>
+
+        <footer class="result-footer">
+          <div class="composition" id="composition">
+            <span class="field-label">阵容构成</span>
+            <div class="composition-items" id="composition-items">
+              <span class="composition-empty">抽取后显示职业分布</span>
+            </div>
+          </div>
+          <div class="sync-note">
+            <span>DATA / PRTS</span>
+            <strong id="sync-date">2026.10.24</strong>
+          </div>
+        </footer>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <template id="operator-card-template">
+    <article class="operator-card">
+      <div class="card-topline">
+        <span class="card-index"></span>
+        <span class="card-rarity"></span>
+      </div>
+      <div class="card-emblem" aria-hidden="true">
+        <span class="card-profession-glyph"></span>
+      </div>
+      <div class="card-content">
+        <span class="card-profession"></span>
+        <h3 class="card-name"></h3>
+        <span class="card-code"></span>
+      </div>
+      <span class="card-corner" aria-hidden="true"></span>
+    </article>
+  </template>
+
+  <script src="data.js"></script>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

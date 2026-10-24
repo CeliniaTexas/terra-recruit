@@ -1,0 +1,46 @@
+#include <windows.h>
+#include "resource.h"
+
+1 ICON "assets/icon.ico"
+1 24 "native/app.manifest"
+
+IDR_INDEX_HTML RCDATA "index.html"
+IDR_STYLES_CSS RCDATA "styles.css"
+IDR_DATA_JS RCDATA "data.js"
+IDR_ENGINE_JS RCDATA "engine.js"
+IDR_APP_JS RCDATA "app.js"
+IDR_MANIFEST RCDATA "manifest.webmanifest"
+IDR_ICON_192 RCDATA "icon-192.png"
+IDR_ICON_512 RCDATA "icon-512.png"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080404b0"
+    BEGIN
+      VALUE "CompanyName", "Terra Recruit"
+      VALUE "FileDescription", "Arknights 12-Operator Random Draft"
+      VALUE "FileVersion", "1.0.0"
+      VALUE "InternalName", "TerraRecruit"
+      VALUE "OriginalFilename", "Terra-Recruit-1.0.0.exe"
+      VALUE "ProductName", "Terra Recruit"
+      VALUE "ProductVersion", "1.0.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0804, 1200
+  END
+END
