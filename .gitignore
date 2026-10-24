@@ -1,5 +1,6 @@
 native/*.obj
 native/*.res
+dist/
 *.log
 .DS_Store
 Thumbs.db

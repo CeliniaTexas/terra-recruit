@@ -44,6 +44,7 @@
     reset: document.querySelector("#reset-conditions"),
     draw: document.querySelector("#draw-button"),
     reroll: document.querySelector("#reroll-button"),
+    keepReroll: document.querySelector("#keep-reroll-button"),
     copy: document.querySelector("#copy-button"),
     grid: document.querySelector("#card-grid"),
     summary: document.querySelector("#result-summary"),
@@ -212,23 +213,36 @@
     const fragment = elements.template.content.cloneNode(true);
     const card = fragment.querySelector(".operator-card");
     const meta = CLASS_META[operator.profession];
+    const starCount = operator.rarity + 1;
     card.style.setProperty("--class-color", meta.color);
     card.style.setProperty("--order", index);
+    card.dataset.cardIndex = index;
     card.classList.add(`is-rarity-${operator.rarity}`);
     card.classList.toggle("is-revealed", reveal);
 
+    const lockButton = card.querySelector(".card-lock");
+    const isLocked = Boolean(operator.isLocked);
+    lockButton.hidden = !reveal;
+    lockButton.dataset.index = index;
+    lockButton.setAttribute("aria-pressed", String(isLocked));
+    lockButton.setAttribute(
+      "aria-label",
+      `${isLocked ? "取消保留" : "保留"}${operator.name}`
+    );
+    lockButton.querySelector("span").textContent = isLocked ? "已保留" : "保留";
+    card.classList.toggle("is-locked", isLocked);
     card.querySelector(".card-index").textContent = `SLOT ${String(index + 1).padStart(2, "0")}`;
-    card.querySelector(".card-rarity").textContent =
-      operator.rarity === 0 ? "SPECIAL" : "◆".repeat(operator.rarity);
+    card.querySelector(".card-rarity").textContent = "◆".repeat(starCount);
     card.querySelector(".card-profession-glyph").textContent = meta.glyph;
     card.querySelector(".card-profession").textContent = `${meta.code} / ${operator.profession}`;
     card.querySelector(".card-name").textContent = operator.name;
     card.querySelector(".card-code").textContent =
-      `RI-${String(index + 1).padStart(2, "0")} · ${operator.rarity === 0 ? "UNKNOWN" : `${operator.rarity} STAR`}`;
+      `RI-${String(index + 1).padStart(2, "0")} · ${starCount} STAR`;
     return card;
   }
 
   function renderResults(results, token) {
+    state.lastResults = results;
     elements.grid.classList.remove("is-idle");
     elements.grid.replaceChildren(...results.map((operator, index) => createCard(operator, index, true)));
 
@@ -250,6 +264,42 @@
     elements.summary.textContent = `抽卡 #${String(token).padStart(3, "0")} · ${highRarity} 名六星`;
     elements.copy.disabled = false;
     elements.reroll.disabled = false;
+    updateLockControls();
+  }
+
+  function updateLockControls() {
+    const lockedCount = state.lastResults.filter((operator) => operator.isLocked).length;
+    elements.keepReroll.disabled = lockedCount === 0;
+
+    if (lockedCount === DRAW_SIZE) {
+      elements.keepReroll.textContent = "已保留全部 12 名";
+    } else if (lockedCount === 0) {
+      elements.keepReroll.textContent = "保留所选 · 重抽其余";
+    } else {
+      elements.keepReroll.textContent =
+        `保留 ${lockedCount} 名 · 重抽其余 ${DRAW_SIZE - lockedCount} 名`;
+    }
+  }
+
+  function toggleLock(index) {
+    const operator = state.lastResults[index];
+    if (!operator) {
+      return;
+    }
+
+    operator.isLocked = !operator.isLocked;
+    const card = elements.grid.querySelector(`[data-card-index="${index}"]`);
+    const lockButton = card?.querySelector(".card-lock");
+    if (card && lockButton) {
+      card.classList.toggle("is-locked", operator.isLocked);
+      lockButton.setAttribute("aria-pressed", String(operator.isLocked));
+      lockButton.setAttribute(
+        "aria-label",
+        `${operator.isLocked ? "取消保留" : "保留"}${operator.name}`
+      );
+      lockButton.querySelector("span").textContent = operator.isLocked ? "已保留" : "保留";
+    }
+    updateLockControls();
   }
 
   function draw() {
@@ -263,6 +313,7 @@
     state.drawToken += 1;
     state.lastResults = drawOperators(state.minimums, state.maximums, state.unique);
     elements.draw.disabled = true;
+    elements.keepReroll.disabled = true;
     elements.draw.classList.add("is-drawing");
     elements.summary.textContent = "正在读取档案…";
 
@@ -273,6 +324,41 @@
     }, 260);
   }
 
+  function rerollUnlocked() {
+    const locked = state.lastResults.filter((operator) => operator.isLocked);
+    if (locked.length === 0) {
+      showToast("请先点击卡片右上角“保留”");
+      return;
+    }
+
+    const error = validateConstraints(
+      state.minimums,
+      state.maximums,
+      state.unique,
+      locked
+    );
+    if (error) {
+      showError(error);
+      return;
+    }
+
+    showError("");
+    state.drawToken += 1;
+    try {
+      const results = drawOperators(
+        state.minimums,
+        state.maximums,
+        state.unique,
+        DRAW_SIZE,
+        locked
+      );
+      renderResults(results, state.drawToken);
+      showToast(`已保留 ${locked.length} 名，其余位置完成重抽`);
+    } catch (drawError) {
+      showError(drawError.message);
+    }
+  }
+
   function resultText() {
     const header = [
       "【泰拉征募】十二人小队",
@@ -281,8 +367,8 @@
     ];
     const rows = state.lastResults.map((operator, index) =>
       `${String(index + 1).padStart(2, "0")}. ${operator.name} / ${operator.profession} / ${
-        operator.rarity === 0 ? "特殊稀有度" : `${operator.rarity}★`
-      }`
+        operator.rarity + 1
+      }★${operator.isLocked ? " [保留]" : ""}`
     );
     const rules = PROFESSIONS
       .flatMap((profession) => {
@@ -353,7 +439,16 @@
     elements.reset.addEventListener("click", resetConditions);
     elements.draw.addEventListener("click", draw);
     elements.reroll.addEventListener("click", draw);
+    elements.keepReroll.addEventListener("click", rerollUnlocked);
     elements.copy.addEventListener("click", copyResults);
+    elements.grid.addEventListener("click", (event) => {
+      const lockButton = event.target.closest(".card-lock");
+      if (!lockButton || lockButton.hidden) {
+        return;
+      }
+      event.stopPropagation();
+      toggleLock(Number(lockButton.dataset.index));
+    });
 
     document.addEventListener("keydown", (event) => {
       const target = event.target;

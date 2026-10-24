@@ -48,12 +48,28 @@
     );
   }
 
-  function validateConstraints(minimums, maximums, unique) {
+  function validateConstraints(minimums, maximums, unique, lockedOperators = []) {
     const totalMin = Object.values(minimums).reduce((sum, value) => sum + value, 0);
     let totalCapacity = 0;
 
+    if (lockedOperators.length > DRAW_SIZE) {
+      return `最多只能保留 ${DRAW_SIZE} 名干员。`;
+    }
+
+    if (unique && new Set(lockedOperators.map((operator) => operator.name)).size !== lockedOperators.length) {
+      return "不重复模式下，保留名单中出现了重复干员。";
+    }
+
     if (totalMin > DRAW_SIZE) {
       return `职业下限合计为 ${totalMin}，超过了 ${DRAW_SIZE} 个名额。`;
+    }
+
+    const lockedCounts = Object.fromEntries(PROFESSIONS.map((profession) => [profession, 0]));
+    for (const operator of lockedOperators) {
+      if (!PROFESSIONS.includes(operator.profession)) {
+        return "保留名单中包含无法识别的职业。";
+      }
+      lockedCounts[operator.profession] += 1;
     }
 
     for (const profession of PROFESSIONS) {
@@ -72,6 +88,10 @@
         return `${profession}的最低人数不能高于最高人数。`;
       }
 
+      if (lockedCounts[profession] > max) {
+        return `已保留 ${lockedCounts[profession]} 名${profession}干员，超过最高人数 ${max}。`;
+      }
+
       if (min > available) {
         return `${profession}候选池只有 ${available} 名干员，无法达到下限 ${min}。`;
       }
@@ -86,8 +106,8 @@
     return "";
   }
 
-  function drawOperators(minimums, maximums, unique, drawSize = DRAW_SIZE) {
-    const error = validateConstraints(minimums, maximums, unique);
+  function drawOperators(minimums, maximums, unique, drawSize = DRAW_SIZE, lockedOperators = []) {
+    const error = validateConstraints(minimums, maximums, unique, lockedOperators);
     if (error) {
       throw new Error(error);
     }
@@ -96,15 +116,26 @@
       throw new RangeError("抽取数量必须为正整数");
     }
 
-    const results = [];
+    if (lockedOperators.length > drawSize) {
+      throw new Error(`最多只能保留 ${drawSize} 名干员。`);
+    }
+
+    const results = lockedOperators.map((operator) => ({ ...operator, isLocked: true }));
     const usedNames = new Set();
     const professionCounts = Object.fromEntries(PROFESSIONS.map((profession) => [profession, 0]));
-    const quotaProfessions = shuffle(PROFESSIONS.filter((profession) => minimums[profession] > 0));
+    for (const operator of results) {
+      usedNames.add(operator.name);
+      professionCounts[operator.profession] += 1;
+    }
+    const quotaProfessions = shuffle(
+      PROFESSIONS.filter((profession) => minimums[profession] > professionCounts[profession])
+    );
 
     if (!unique) {
       for (const profession of quotaProfessions) {
         const candidates = OPERATORS_BY_PROFESSION[profession];
-        for (let index = 0; index < minimums[profession]; index += 1) {
+        const needed = minimums[profession] - professionCounts[profession];
+        for (let index = 0; index < needed; index += 1) {
           const [name, rarity] = candidates[getRandomInt(candidates.length)];
           results.push({ name, rarity, profession });
           professionCounts[profession] += 1;
@@ -127,7 +158,8 @@
 
     for (const profession of quotaProfessions) {
       const candidates = shuffledProfessionPool(profession, usedNames);
-      const count = Math.min(minimums[profession], candidates.length);
+      const needed = minimums[profession] - professionCounts[profession];
+      const count = Math.min(needed, candidates.length);
       for (let index = 0; index < count; index += 1) {
         results.push(candidates[index]);
         usedNames.add(candidates[index].name);

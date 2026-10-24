@@ -138,6 +138,13 @@
 
         <div class="error-banner" id="error-banner" role="alert" hidden></div>
 
+        <div class="reroll-toolbar">
+          <p><strong>保留想要的干员</strong><span>点击卡片右上角“保留”，其余位置会重新抽取。</span></p>
+          <button class="keep-reroll-button" id="keep-reroll-button" type="button" disabled>
+            保留所选 · 重抽其余
+          </button>
+        </div>
+
         <div class="card-grid is-idle" id="card-grid" aria-live="polite"></div>
 
         <footer class="result-footer">
@@ -164,6 +171,13 @@
         <span class="card-index"></span>
         <span class="card-rarity"></span>
       </div>
+      <button class="card-lock" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="10" width="14" height="10" rx="1"></rect>
+          <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+        </svg>
+        <span>保留</span>
+      </button>
       <div class="card-emblem" aria-hidden="true">
         <span class="card-profession-glyph"></span>
       </div>
@@ -172,7 +186,6 @@
         <h3 class="card-name"></h3>
         <span class="card-code"></span>
       </div>
-      <span class="card-corner" aria-hidden="true"></span>
     </article>
   </template>
 
