@@ -16,6 +16,16 @@ $professions = @(
   [regex]::Unescape('\u7279\u79cd')  # Specialist
 )
 
+# Keep manually supplied pending operators until PRTS Cargo exposes them.
+$manualOperators = @(
+  @{ name = [regex]::Unescape('\u884c\u94c3'); profession = [regex]::Unescape('\u7279\u79cd'); rarity = 3 },
+  @{ name = [regex]::Unescape('\u955c\u5320'); profession = [regex]::Unescape('\u91cd\u88c5'); rarity = 4 },
+  @{ name = [regex]::Unescape('\u5965\u5c14\u4f73'); profession = [regex]::Unescape('\u8fd1\u536b'); rarity = 4 },
+  @{ name = [regex]::Unescape('\u56fd\u5ea6'); profession = [regex]::Unescape('\u7279\u79cd'); rarity = 5 },
+  @{ name = [regex]::Unescape('\u5854\u9732\u62c9'); profession = [regex]::Unescape('\u8fd1\u536b'); rarity = 5 },
+  @{ name = [regex]::Unescape('\u51bb\u6cb3'); profession = [regex]::Unescape('\u8f85\u52a9'); rarity = 5 }
+)
+
 $headers = @{
   "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/142.0.0.0 Safari/537.36"
   "Accept" = "application/json"
@@ -61,6 +71,19 @@ foreach ($entry in $response.cargoquery) {
   $groups[$title.profession] += ,@($title.name, [int]$title.rarity)
 }
 
+foreach ($operator in $manualOperators) {
+  $exists = $false
+  foreach ($existing in $groups[$operator.profession]) {
+    if ($existing[0] -eq $operator.name) {
+      $exists = $true
+      break
+    }
+  }
+  if (-not $exists) {
+    $groups[$operator.profession] += ,@($operator.name, [int]$operator.rarity)
+  }
+}
+
 $encodedGroups = @()
 foreach ($profession in $professions) {
   $items = $groups[$profession] | ForEach-Object {
@@ -75,7 +98,7 @@ $professionJson = $professions | ForEach-Object { '"' + $_ + '"' }
 $content = @"
 /*
  * Operator names, professions and rarities are sourced from PRTS.
- * Synced: $today
+ * Synced: $today (includes manually supplied pending operators)
  * Group format: [operator name, rarity]. Rarity 0 means special.
  */
 window.OPERATOR_DATA = {
@@ -90,4 +113,5 @@ $($encodedGroups -join ",`n")
 
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($dataPath, $content, $utf8NoBom)
-Write-Host "Synced $($response.cargoquery.Count) operators -> $dataPath"
+$totalCount = ($groups.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
+Write-Host "Synced $totalCount operators -> $dataPath"
